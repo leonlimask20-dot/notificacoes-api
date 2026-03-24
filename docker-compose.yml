@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+
+  # MongoDB — banco de documentos para armazenar as notificações
+  mongodb:
+    image: mongo:7
+    container_name: notificacoes-mongodb
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_DATABASE: notificacoesdb
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', 'db.adminCommand("ping")']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis — cache de preferências e rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: notificacoes-redis
+    ports:
+      - '6379:6379'
+    command: redis-server --save 60 1
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API
+  api:
+    build: .
+    container_name: notificacoes-api
+    ports:
+      - '8086:8086'
+    environment:
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+      MONGO_DB: notificacoesdb
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mongodb_data:
+  redis_data:
