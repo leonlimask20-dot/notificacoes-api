@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 @DisplayName("ServicoRedis — testes unitários")
 class ServicoRedisTest {
 
@@ -67,6 +68,16 @@ class ServicoRedisTest {
     }
 
     @Test
+    @DisplayName("deve retornar Optional vazio quando valor não é PreferenciasUsuario")
+    void buscarPreferencias_valorInvalido_retornaVazio() {
+        when(valueOperations.get("preferencias:usuario-123")).thenReturn("string-invalida");
+
+        Optional<PreferenciasUsuario> resultado = servicoRedis.buscarPreferencias("usuario-123");
+
+        assertThat(resultado).isEmpty();
+    }
+
+    @Test
     @DisplayName("deve salvar preferências no Redis com TTL")
     void salvarPreferencias_salvaNaChaveCorreta() {
         PreferenciasUsuario prefs = PreferenciasUsuario.builder()
@@ -78,6 +89,44 @@ class ServicoRedisTest {
         servicoRedis.salvarPreferencias("usuario-123", prefs);
 
         verify(valueOperations).set(eq("preferencias:usuario-123"), eq(prefs), any());
+    }
+
+    @Test
+    @DisplayName("deve invalidar cache de preferências do usuário")
+    void invalidarPreferencias_deletaChaveCorreta() {
+        servicoRedis.invalidarPreferencias("usuario-123");
+
+        verify(redisTemplate).delete("preferencias:usuario-123");
+    }
+
+    @Test
+    @DisplayName("deve retornar contador atual quando chave existe no Redis")
+    void contadorAtual_chaveExiste_retornaContador() {
+        when(valueOperations.get("rate_limit:usuario-123")).thenReturn("7");
+
+        Long resultado = servicoRedis.contadorAtual("usuario-123");
+
+        assertThat(resultado).isEqualTo(7L);
+    }
+
+    @Test
+    @DisplayName("deve retornar zero quando chave não existe no Redis")
+    void contadorAtual_chaveNaoExiste_retornaZero() {
+        when(valueOperations.get("rate_limit:usuario-123")).thenReturn(null);
+
+        Long resultado = servicoRedis.contadorAtual("usuario-123");
+
+        assertThat(resultado).isEqualTo(0L);
+    }
+
+    @Test
+    @DisplayName("deve retornar false quando Redis retorna null no increment")
+    void verificarRateLimit_redisRetornaNull_retornaFalse() {
+        when(valueOperations.increment("rate_limit:usuario-123")).thenReturn(null);
+
+        boolean resultado = servicoRedis.verificarRateLimit("usuario-123");
+
+        assertThat(resultado).isFalse();
     }
 
     @Test
@@ -108,5 +157,15 @@ class ServicoRedisTest {
         servicoRedis.verificarRateLimit("usuario-123");
 
         verify(redisTemplate).expire(eq("rate_limit:usuario-123"), any());
+    }
+
+    @Test
+    @DisplayName("não deve definir TTL quando não é a primeira chamada")
+    void verificarRateLimit_naoEPrimeiraChama_naoDefineTTL() {
+        when(valueOperations.increment("rate_limit:usuario-123")).thenReturn(5L);
+
+        servicoRedis.verificarRateLimit("usuario-123");
+
+        verify(redisTemplate, never()).expire(any(), any());
     }
 }
