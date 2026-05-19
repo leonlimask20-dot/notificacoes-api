@@ -1,48 +1,49 @@
-# Notificações API
+# Notifications API
 
 ![CI](https://github.com/leonlimask20-dot/notificacoes-api/actions/workflows/ci.yml/badge.svg)
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2-6DB33F?logo=spring&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?logo=mongodb&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
-![Testes](https://img.shields.io/badge/testes-JUnit5%20+%20Mockito-2E7D32)
+![Tests](https://img.shields.io/badge/tests-JUnit5%20+%20Mockito-2E7D32)
 
-API de notificações multicanal com MongoDB para persistência e Redis para cache de preferências e rate limiting.
+Multi-channel notifications API with MongoDB for persistence and Redis for
+preference caching and rate limiting.
 
 ---
 
-## Links rápidos
+## Quick links
 
 | | |
 |---|---|
 | Swagger UI | `http://localhost:8086/swagger-ui.html` |
-| Rodar com Docker | `docker-compose up --build` |
-| Rodar testes | `mvn test` |
+| Run with Docker | `docker-compose up --build` |
+| Run tests | `mvn test` |
 
 ---
 
-## Principais competências demonstradas
+## Key skills demonstrated
 
-- **MongoDB** — armazenamento de documentos com campos flexíveis por tipo de notificação
-- **Redis** — cache de preferências com TTL e rate limiting com contador atômico
-- Spring Data MongoDB — MongoRepository com queries derivadas por nome de método
-- Spring Data Redis — RedisTemplate com serialização JSON
-- Rate limiting por usuário — máximo de envios por minuto com INCR + EXPIRE atômicos
-- Cache de preferências — busca no Redis (cache hit) com fallback para padrão (cache miss)
-- Testes unitários com JUnit 5 e Mockito — MongoDB e Redis totalmente mockados
-- MongoDB embarcado (Flapdoodle) para testes de integração sem infraestrutura
-- Docker Compose com MongoDB, Redis e API
-- Pipeline CI com GitHub Actions
+- **MongoDB** — document storage with flexible fields per notification type
+- **Redis** — preference caching with TTL and rate limiting with an atomic counter
+- Spring Data MongoDB — MongoRepository with method-name derived queries
+- Spring Data Redis — RedisTemplate with JSON serialization
+- Per-user rate limiting — a maximum number of sends per minute with atomic INCR + EXPIRE
+- Preference caching — Redis lookup (cache hit) with a fallback to defaults (cache miss)
+- Unit tests with JUnit 5 and Mockito — MongoDB and Redis fully mocked
+- Embedded MongoDB (Flapdoodle) for integration tests with no infrastructure
+- Docker Compose with MongoDB, Redis and the API
+- CI pipeline with GitHub Actions
 
 ---
 
-## Por que MongoDB para notificações?
+## Why MongoDB for notifications?
 
-Cada tipo de notificação pode ter campos diferentes:
+Each notification type can have different fields:
 
 ```json
 // EMAIL
-{ "tipo": "EMAIL", "metadados": { "assunto": "Compra confirmada", "templateId": "t001" } }
+{ "tipo": "EMAIL", "metadados": { "assunto": "Purchase confirmed", "templateId": "t001" } }
 
 // SMS
 { "tipo": "SMS", "metadados": { "ddd": "92", "operadora": "claro" } }
@@ -51,43 +52,46 @@ Cada tipo de notificação pode ter campos diferentes:
 { "tipo": "PUSH", "metadados": { "deviceToken": "abc123", "badge": 1 } }
 ```
 
-Em SQL isso exigiria colunas nulas ou tabelas separadas. No MongoDB, cada documento tem exatamente os campos que precisa.
+In SQL this would require nullable columns or separate tables. In MongoDB, each
+document has exactly the fields it needs.
 
 ---
 
-## Por que Redis para preferências e rate limiting?
+## Why Redis for preferences and rate limiting?
 
-**Preferências:** lidas a cada envio de notificação. Redis mantém em memória com TTL — ~10x mais rápido que MongoDB para leituras frequentes.
+**Preferences:** read on every notification send. Redis keeps them in memory
+with a TTL — ~10x faster than MongoDB for frequent reads.
 
-**Rate limiting:** usa INCR + EXPIRE atômicos. Thread-safe por natureza, sem necessidade de locks.
+**Rate limiting:** uses atomic INCR + EXPIRE. Thread-safe by nature, with no
+need for locks.
 
 ---
 
-## Tecnologias
+## Tech stack
 
-| Tecnologia | Uso |
+| Technology | Use |
 |---|---|
-| MongoDB 7 | Persistência de notificações |
-| Redis 7 | Cache de preferências + rate limiting |
+| MongoDB 7 | Notification persistence |
+| Redis 7 | Preference caching + rate limiting |
 | Spring Data MongoDB | MongoRepository |
 | Spring Data Redis | RedisTemplate |
-| Flapdoodle | MongoDB embarcado para testes |
-| JUnit 5 + Mockito | Testes unitários |
-| Swagger UI | Documentação interativa |
-| Docker Compose | Orquestração local |
+| Flapdoodle | Embedded MongoDB for tests |
+| JUnit 5 + Mockito | Unit tests |
+| Swagger UI | Interactive documentation |
+| Docker Compose | Local orchestration |
 
 ---
 
-## Arquitetura
+## Architecture
 
 ```
 src/
 ├── config/
-│   └── ConfiguracaoRedis.java      ← serialização JSON no Redis
+│   └── ConfiguracaoRedis.java      ← JSON serialization in Redis
 ├── controller/
-│   └── ControladorNotificacao.java ← endpoints REST
+│   └── ControladorNotificacao.java ← REST endpoints
 ├── dto/
-│   └── NotificacaoDTO.java         ← requisição, resposta, preferências
+│   └── NotificacaoDTO.java         ← request, response, preferences
 ├── enums/
 │   ├── TipoNotificacao.java        ← EMAIL, SMS, PUSH, IN_APP
 │   └── StatusNotificacao.java      ← PENDENTE, ENVIADA, FALHOU, LIDA
@@ -97,52 +101,64 @@ src/
 │   └── RecursoNaoEncontradoException.java
 ├── modelo/
 │   ├── Notificacao.java            ← @Document MongoDB
-│   └── PreferenciasUsuario.java    ← armazenado no Redis
+│   └── PreferenciasUsuario.java    ← stored in Redis
 ├── repositorio/
 │   └── NotificacaoRepositorio.java ← MongoRepository
 └── servico/
-    ├── ServicoNotificacao.java     ← lógica de negócio
-    └── ServicoRedis.java           ← cache + rate limiting
+    ├── ServicoNotificacao.java     ← business logic
+    └── ServicoRedis.java           ← caching + rate limiting
 ```
 
 ---
 
 ## Endpoints
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/api/notificacoes` | Enviar notificação |
-| GET | `/api/notificacoes/usuario/{id}` | Listar notificações |
-| GET | `/api/notificacoes/usuario/{id}/status/{status}` | Filtrar por status |
-| PATCH | `/api/notificacoes/{id}/lida` | Marcar como lida |
-| GET | `/api/notificacoes/usuario/{id}/resumo` | Resumo por status |
-| PUT | `/api/notificacoes/usuario/{id}/preferencias` | Salvar preferências no Redis |
+| Method | Route | Description |
+|--------|------|-------------|
+| POST | `/api/notificacoes` | Send notification |
+| GET | `/api/notificacoes/usuario/{id}` | List notifications |
+| GET | `/api/notificacoes/usuario/{id}/status/{status}` | Filter by status |
+| PATCH | `/api/notificacoes/{id}/lida` | Mark as read |
+| GET | `/api/notificacoes/usuario/{id}/resumo` | Summary by status |
+| PUT | `/api/notificacoes/usuario/{id}/preferencias` | Save preferences to Redis |
 
 ---
 
-## Como executar
+## How to run
 
 ```bash
 docker-compose up --build
 ```
 
-Acesse o Swagger em `http://localhost:8086/swagger-ui.html`
+Open the Swagger UI at `http://localhost:8086/swagger-ui.html`
 
 ---
 
-## Testes
+## Tests
 
 ```bash
 mvn test
 ```
 
-Os testes rodam sem MongoDB nem Redis instalados:
-- MongoDB: substituído pelo Flapdoodle (embarcado em memória)
-- Redis: mockado via Mockito
+The tests run without MongoDB or Redis installed:
+- MongoDB: replaced by Flapdoodle (embedded in memory)
+- Redis: mocked via Mockito
 
 ---
 
-## Autor
+## 🤖 Agent Architecture
+
+This project was built and code-reviewed using a **multi-agent
+context-optimization workflow**: specialized AI agents each audit a single
+slice of the codebase — MongoDB persistence, Redis caching, REST layer, tests —
+within a strict context budget. The approach cuts review time and token cost
+while keeping full traceability of every finding.
+
+Methodology, agent templates and the full playbook: **[leonlim3.gumroad.com](https://leonlim3.gumroad.com)**
+
+---
+
+## Author
 
 **LNL**
 GitHub: [@leonlimask20-dot](https://github.com/leonlimask20-dot)
