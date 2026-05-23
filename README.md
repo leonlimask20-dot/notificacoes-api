@@ -1,4 +1,4 @@
-# Notifications API
+﻿# Notifications API
 
 ![CI](https://github.com/leonlimask20-dot/notificacoes-api/actions/workflows/ci.yml/badge.svg)
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
@@ -154,7 +154,7 @@ slice of the codebase — MongoDB persistence, Redis caching, REST layer, tests 
 within a strict context budget. The approach cuts review time and token cost
 while keeping full traceability of every finding.
 
-Methodology, agent templates and the full playbook: **[leonlim3.gumroad.com](https://leonlim3.gumroad.com)**
+Methodology, agent templates and the full playbook: **[Stop Burning Context — Claude Code Playbook](https://leonlim3.gumroad.com/l/claude-code-context-playbook)**
 
 ---
 
